@@ -12,6 +12,6 @@ router.route("/").get((req, res) => {
 });
 
 router.route("/login").post(login);
-router.route("/recoverUserInfo").post(recoverUserInfo);
+router.route("/recoverUserInfo").get(recoverUserInfo);
 
 export default router;
