@@ -1,19 +1,12 @@
-import {
-  Request, Response, NextFunction,
-} from 'express';
-import { getCustomRepository } from 'typeorm';
-import { UserRepository } from '../repositories';
-import { User } from '../DTOs';
+import { Request, Response, NextFunction } from "express";
+import { getCustomRepository } from "typeorm";
+import { UserRepository } from "../repositories";
+import { User } from "../DTOs";
 
 class UserController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const {
-        name,
-        phone,
-        email,
-        password,
-      } = req.body;
+      const { name, phone, email, password } = req.body;
 
       const userRepository = getCustomRepository(UserRepository);
 
@@ -38,7 +31,7 @@ class UserController {
       if (checkEmail) {
         return next({
           status: 400,
-          message: 'This email is already registred',
+          message: "This email is already registred",
         });
       }
 
@@ -46,7 +39,7 @@ class UserController {
 
       res.locals = {
         status: 201,
-        message: 'User created',
+        message: "User created",
         data: user,
       };
 
@@ -59,21 +52,29 @@ class UserController {
   async read(req: Request, res: Response, next: NextFunction) {
     try {
       const { userId } = req.params;
+      const email = req.query.email as string;
+
+      let user = undefined;
 
       const userRepository = getCustomRepository(UserRepository);
-      const user = await userRepository.findById(userId);
+
+      if (userId) {
+        user = await userRepository.findById(userId);
+      } else {
+        user = await userRepository.findByEmail(email);
+      }
 
       if (!user) {
         return next({
           status: 404,
-          message: 'User not found',
+          message: "User not found",
         });
       }
 
-      if (user === 'ERROR') {
+      if (user === "ERROR") {
         return next({
           status: 400,
-          message: 'Incorrect parameters',
+          message: "Incorrect parameters",
         });
       }
 
