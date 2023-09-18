@@ -28,10 +28,7 @@ class AuthenticationController {
       const { password: notUsed, ...userWithoutPassword } = user;
 
       const accessToken = jwt.sign(user?.id, process.env.ACCESS_TOKEN_SECRET);
-      res.locals = {
-        status: 200,
-        data: { user: userWithoutPassword, token: accessToken },
-      };
+      res.status(200).json({ user: userWithoutPassword, token: accessToken });
 
       return next();
     } catch (error) {
@@ -63,10 +60,7 @@ class AuthenticationController {
           } else {
             const { password: notUsed, ...userWithoutPassword } = user as User;
 
-            res.locals = {
-              status: 200,
-              data: userWithoutPassword,
-            };
+            res.status(200).json({ user: userWithoutPassword });
 
             return next();
           }
