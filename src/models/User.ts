@@ -1,19 +1,19 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
 @Entity()
 export default class User {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column('text')
+  @Column("text")
   name: string;
 
-  @Column('text', { nullable: true })
+  @Column("text", { nullable: true })
   phone: string;
 
-  @Column('text', { unique: true })
+  @Column("text", { unique: true })
   email: string;
 
-  @Column('text', { select: false })
+  @Column("text")
   password: string;
 }
