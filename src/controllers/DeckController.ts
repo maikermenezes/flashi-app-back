@@ -1,93 +1,183 @@
-import {
-    Request, Response, NextFunction,
-  } from 'express';
-  import { getCustomRepository } from 'typeorm';
-  import { UserRepository } from '../repositories';
-  import { Deck } from '../DTOs';
-  
-  class DeckController {
-    async create(req: Request, res: Response, next: NextFunction) {
-      try {
-        const {
-          name,
-          phone,
-          email,
-          password,
-        } = req.body;
-  
-        const userRepository = getCustomRepository(UserRepository);
-  
-        const userData = {
-          name,
-          phone,
-          email,
-          password,
-        };
-  
-        const { error } = Deck.validate(userData);
-  
-        if (error) {
-          return next({
-            status: 400,
-            message: error.details,
-          });
-        }
-  
-        const checkEmail = await userRepository.findByEmail(email);
-  
-        if (checkEmail) {
-          return next({
-            status: 400,
-            message: 'This email is already registred',
-          });
-        }
-  
-        const user = await userRepository.save(userData);
-  
-        res.locals = {
-          status: 201,
-          message: 'User created',
-          data: user,
-        };
-  
-        return next();
-      } catch (error) {
-        return next(error);
+import { Request, Response, NextFunction } from "express";
+import { getCustomRepository } from "typeorm";
+import { CardRepository, DeckRepository } from "../repositories"; // Assuming you will have a DeckRepository similar to UserRepository
+import { Deck } from "../DTOs"; // Assuming Deck is part of DTOs
+import notNull from "src/utils/notNull";
+import { UserRepository } from "../repositories"; // Importing for verifying user existence
+
+class DeckController {
+  async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { name, userId } = req.body;
+
+      const userRepository = getCustomRepository(UserRepository);
+      const user = await userRepository.findOne(userId);
+
+      if (!user) {
+        return next({
+          status: 404,
+          message: "User not found",
+        });
       }
+
+      const deckRepository = getCustomRepository(DeckRepository);
+
+      const deckData = {
+        name,
+        userId,
+      };
+
+      // Assuming Deck has a validate method similar to User
+      const { error } = Deck.validate(deckData);
+
+      if (error) {
+        return next({
+          status: 400,
+          message: error.details,
+        });
+      }
+
+      const deck = await deckRepository.save(deckData);
+
+      res.locals = {
+        status: 201,
+        message: "Deck created",
+        data: deck,
+      };
+
+      return next();
+    } catch (error) {
+      return next(error);
     }
-  
-    async read(req: Request, res: Response, next: NextFunction) {
-      try {
-        const { userId } = req.params;
-  
-        const userRepository = getCustomRepository(UserRepository);
-        const user = await userRepository.findById(userId);
-  
+  }
+
+  async read(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { deckId } = req.params;
+
+      const deckRepository = getCustomRepository(DeckRepository);
+
+      const deck = await deckRepository.findOne(deckId); // Including user relation
+
+      if (!deck) {
+        return next({
+          status: 404,
+          message: "Deck not found",
+        });
+      }
+
+      res.status(200).json(deck);
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { deckId } = req.params;
+
+      const deckRepository = getCustomRepository(DeckRepository);
+
+      const deck = await deckRepository.findOne(deckId);
+
+      if (!deck) {
+        return next({
+          status: 404,
+          message: "Deck not found",
+        });
+      }
+
+      const newAttributes = notNull(req.body);
+      const newDeckInfo = { ...deck, ...newAttributes };
+
+      // Validate if a new userId is provided and if the user exists
+      if (newAttributes.userId) {
+        const user = await getCustomRepository(UserRepository).findOne(
+          newAttributes.userId
+        );
         if (!user) {
           return next({
             status: 404,
-            message: 'User not found',
+            message: "User not found for provided userId",
           });
         }
-  
-        if (user === 'ERROR') {
-          return next({
-            status: 400,
-            message: 'Incorrect parameters',
-          });
-        }
-  
-        res.locals = {
-          status: 200,
-          data: user,
-        };
-  
-        return next();
-      } catch (error) {
-        return next(error);
       }
+
+      await deckRepository.save(newDeckInfo);
+
+      res.locals = {
+        status: 200,
+        message: "Deck updated successfully",
+        data: newDeckInfo,
+      };
+
+      return next();
+    } catch (error) {
+      return next(error);
     }
   }
-  
-  export default new DeckController();
-  
+
+  async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { deckId } = req.params;
+
+      const deckRepository = getCustomRepository(DeckRepository);
+
+      const deck = await deckRepository.findOne(deckId);
+
+      if (!deck) {
+        return next({
+          status: 404,
+          message: "Deck not found",
+        });
+      }
+
+      await deckRepository.remove(deck);
+
+      res.locals = {
+        status: 200,
+        message: "Deck deleted successfully",
+      };
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getCardsFromDeck(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { deckId } = req.params;
+
+      const deckRepository = getCustomRepository(DeckRepository);
+      const cardRepository = getCustomRepository(CardRepository);
+
+      const deck = await deckRepository.findOne(deckId);
+      if (!deck) {
+        return next({
+          status: 404,
+          message: "Deck not found",
+        });
+      }
+
+      const cards = await cardRepository.find({ where: { deckId } });
+
+      if (!cards?.length) {
+        return next({
+          status: 404,
+          message: "No cards found for the specified deck",
+        });
+      }
+
+      res.status(200).json(cards);
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+}
+
+export default new DeckController();
