@@ -1,18 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import { getCustomRepository } from "typeorm";
-import { UserRepository } from "../repositories";
+import {
+  CardRepository,
+  DeckRepository,
+  UserRepository,
+} from "../repositories";
 import { User } from "../DTOs";
+import notNull from "src/utils/notNull";
 
 class UserController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, phone, email, password } = req.body;
+      const { name, email, password } = req.body;
 
       const userRepository = getCustomRepository(UserRepository);
 
       const userData = {
         name,
-        phone,
         email,
         password,
       };
@@ -78,10 +82,142 @@ class UserController {
         });
       }
 
+      res.status(200).json(user);
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+
+      const userRepository = getCustomRepository(UserRepository);
+
+      const user = await userRepository.findOne(userId);
+
+      if (!user) {
+        return next({
+          status: 404,
+          message: "User not found",
+        });
+      }
+
+      const newAttributes = notNull(req.body);
+      const newUserInfo = { ...user, ...newAttributes };
+
+      await userRepository.save(newUserInfo);
+
       res.locals = {
         status: 200,
-        data: user,
+        message: "User updated successfully",
+        data: newUserInfo,
       };
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async delete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+
+      const userRepository = getCustomRepository(UserRepository);
+
+      const user = await userRepository.findOne(userId);
+
+      if (!user) {
+        return next({
+          status: 404,
+          message: "User not found",
+        });
+      }
+
+      await userRepository.remove(user);
+
+      res.locals = {
+        status: 200,
+        message: "User deleted successfully",
+      };
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getUserDecks(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+
+      const userRepository = getCustomRepository(UserRepository);
+
+      const user = await userRepository.findOne(userId);
+
+      if (!user) {
+        return next({
+          status: 404,
+          message: "User not found",
+        });
+      }
+
+      const deckRepository = getCustomRepository(DeckRepository);
+
+      let decks = await deckRepository.find({ userId }); // Get all decks associated with the provided userId
+
+      if (!decks || decks.length === 0) {
+        decks = [];
+      }
+
+      res.status(200).json(decks);
+
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getUserCards(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId } = req.params;
+
+      const userRepository = getCustomRepository(UserRepository);
+      const deckRepository = getCustomRepository(DeckRepository);
+      const cardRepository = getCustomRepository(CardRepository);
+
+      // Check if the user exists
+      const user = await userRepository.findOne(userId);
+      if (!user) {
+        return next({
+          status: 404,
+          message: "User not found",
+        });
+      }
+
+      const userDecks = await deckRepository.find({ where: { userId } });
+
+      if (!userDecks.length) {
+        return next({
+          status: 404,
+          message: "No decks found for the specified user",
+        });
+      }
+
+      const userDecksIds = userDecks.map((deck) => deck.id);
+      let cards = await cardRepository
+        .createQueryBuilder("card")
+        .where("card.deckId IN (:...userDecksIds)", { userDecksIds })
+        .getMany();
+
+      if (!cards?.length) {
+        cards = [];
+      }
+
+      res.status(200).json(cards);
 
       return next();
     } catch (error) {

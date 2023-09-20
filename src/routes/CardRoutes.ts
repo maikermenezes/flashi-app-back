@@ -1,16 +1,14 @@
-import { Router } from 'express';
-import { UserController } from '../controllers';
+import CardController from "@controllers/CardController";
+import { Router } from "express";
 
-const userRouter = Router();
+const CardRouter = Router();
 
-userRouter.route('/card/')
-  .post(
-    UserController.create,
-  );
+CardRouter.route("/").post(CardController.create);
 
-userRouter.route('/card/:userId')
-  .get(
-    UserController.read,
-  );
+CardRouter.route("/:cardId").get(CardController.read);
 
-export default userRouter;
+CardRouter.route("/:cardId").patch(CardController.update);
+
+CardRouter.route("/:cardId").delete(CardController.delete);
+
+export default CardRouter;

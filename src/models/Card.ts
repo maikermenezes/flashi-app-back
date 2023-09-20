@@ -1,22 +1,30 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import Deck from './Deck';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import Deck from "./Deck";
 
 @Entity()
 export default class Card {
-    
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-    @Column('text')
-    phrase: string;
+  @Column("text")
+  phrase: string;
 
-    @Column('text', { nullable: true })
-    translation: string;
+  @Column("text", { nullable: true })
+  translation: string;
 
-    @Column('text', { nullable: true })
-    image: string;
+  @Column("text", { nullable: true })
+  image: string;
 
-    @ManyToOne(() => Deck, (deck) => deck)
-    deck: Deck;
-    
+  @Column()
+  deckId: string;
+
+  @ManyToOne(() => Deck)
+  @JoinColumn({ name: "deckId" })
+  deck: Deck;
 }

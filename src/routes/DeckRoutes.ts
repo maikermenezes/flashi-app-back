@@ -1,16 +1,16 @@
-import { Router } from 'express';
-import { UserController } from '../controllers';
+import DeckController from "@controllers/DeckController";
+import { Router } from "express";
 
-const userRouter = Router();
+const DeckRouter = Router();
 
-userRouter.route('/')
-  .post(
-    UserController.create,
-  );
+DeckRouter.route("/").post(DeckController.create);
 
-userRouter.route('/:userId')
-  .get(
-    UserController.read,
-  );
+DeckRouter.route("/:deckId").get(DeckController.read);
 
-export default userRouter;
+DeckRouter.route("/:deckId").patch(DeckController.update);
+
+DeckRouter.route("/:deckId").delete(DeckController.delete);
+
+DeckRouter.route("/cards/:deckId").get(DeckController.getCardsFromDeck);
+
+export default DeckRouter;
