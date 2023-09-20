@@ -167,13 +167,10 @@ class UserController {
 
       const deckRepository = getCustomRepository(DeckRepository);
 
-      const decks = await deckRepository.find({ userId }); // Get all decks associated with the provided userId
+      let decks = await deckRepository.find({ userId }); // Get all decks associated with the provided userId
 
       if (!decks || decks.length === 0) {
-        return next({
-          status: 404,
-          message: "No decks found for the provided user",
-        });
+        decks = [];
       }
 
       res.status(200).json(decks);
@@ -211,17 +208,13 @@ class UserController {
       }
 
       const userDecksIds = userDecks.map((deck) => deck.id);
-      const cards = await cardRepository
+      let cards = await cardRepository
         .createQueryBuilder("card")
         .where("card.deckId IN (:...userDecksIds)", { userDecksIds })
         .getMany();
 
       if (!cards?.length) {
-        return next({
-          status: 404,
-          message:
-            "No cards found for the decks associated with the specified user",
-        });
+        cards = [];
       }
 
       res.status(200).json(cards);

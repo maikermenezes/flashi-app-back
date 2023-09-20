@@ -162,13 +162,10 @@ class DeckController {
         });
       }
 
-      const cards = await cardRepository.find({ where: { deckId } });
+      let cards = await cardRepository.find({ where: { deckId } });
 
       if (!cards?.length) {
-        return next({
-          status: 404,
-          message: "No cards found for the specified deck",
-        });
+        cards = [];
       }
 
       res.status(200).json(cards);
