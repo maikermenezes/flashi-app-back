@@ -40,10 +40,9 @@ class DeckController {
       const deck = await deckRepository.save(deckData);
 
       res.locals = {
-        status: 201,
         message: "Deck created",
-        data: deck,
       };
+      res.status(201).json(deck)
 
       return next();
     } catch (error) {
